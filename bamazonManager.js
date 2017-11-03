@@ -1,5 +1,6 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
+const Table = require('cli-table');
 
 const connection = mysql.createConnection({
   host: "localhost",
@@ -13,18 +14,28 @@ const bamazonManager = {
   retrieveAllDb: function(cb) { //function that selects all from the db
     connection.query('SELECT * FROM products', function(err, res){
       if (err) throw err;
+      let table = new Table({
+        head: ['department_id', 'department_name', 'over_head_costs', 'product_sales', 'total_profit'],
+        colWidths: [17, 17, 17, 17, 17]
+      });
       for (let i of res) {
-        console.log(`ID: ${i.item_id} | Product: ${i.product_name} | Department: ${i.department_name} | Price: ${i.price} | In-stock: ${i.stock_quantity}`);
+        table.push([i.item_id, i.product_name, i.department_name, i.price, i.stock_quantity]);
       }
+      console.log(table.toString());
       bamazonManager.start();
     });
   },
   lowInventory: function() {
     connection.query('SELECT * FROM products WHERE stock_quantity < 5', function(err, res){
       if (err) throw err;
+      let table = new Table({
+        head: ['department_id', 'department_name', 'over_head_costs', 'product_sales', 'total_profit'],
+        colWidths: [17, 17, 17, 17, 17]
+      });
       for (let i of res) {
-        console.log(`ID: ${i.item_id} | Product: ${i.product_name} | Department: ${i.department_name} | Price: ${i.price} | In-stock: ${i.stock_quantity}`);
+        table.push([i.item_id, i.product_name, i.department_name, i.price, i.stock_quantity]);
       }
+      console.log(table.toString());
       bamazonManager.start();
     });
   },
@@ -128,5 +139,4 @@ const bamazonManager = {
     });
   }
 };
-
 bamazonManager.start();
