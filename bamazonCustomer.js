@@ -1,7 +1,11 @@
+//Setting up dependencies
+//==============================================================================================================
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const Table = require('cli-table');
 
+//Creating connection and entering DB info
+//==============================================================================================================
 const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
@@ -10,12 +14,15 @@ const connection = mysql.createConnection({
   database: "bamazonDB"
 });
 
+//Setting up object to hold app logic
+//==============================================================================================================
 const bamazon = {
+  //retrieves all data from the products table
   retrieveAllDb: function(cb) { //function that selects all from the db
     connection.query('SELECT * FROM products', function(err, res){
       if (err) throw err;
       let table = new Table({
-        head: ['department_id', 'department_name', 'over_head_costs', 'product_sales', 'total_profit'],
+        head: ['Item ID', 'Product Name', 'Department Name', 'Price', '# In Stock'],
         colWidths: [17, 17, 17, 17, 17]
       });
       for (let i of res) {
@@ -25,6 +32,7 @@ const bamazon = {
       return cb;
     });
   },
+  //Inquirer to determine if the user wants to buy something and if so what and how many
   inquire: function() {
     inquirer.prompt([
     {
@@ -47,7 +55,12 @@ const bamazon = {
           }
         ]).then(function(ans){
           connection.query('SELECT stock_quantity,price,product_name FROM products WHERE ?', [{item_id: ans.item}], function(err, res) {
-            return (parseFloat(ans.quantity) < res[0].stock_quantity) ? bamazon.buyItem(ans.item, ans.quantity, res[0].stock_quantity, res[0].price, res[0].product_name) : connection.end(console.log('Insufficient Quantity!'));
+            if (parseFloat(ans.quantity) <= res[0].stock_quantity) {
+              bamazon.buyItem(ans.item, ans.quantity, res[0].stock_quantity, res[0].price, res[0].product_name);
+            } else {
+              console.log('Insufficient quantity!');
+              bamazon.retrieveAllDb('Insufficient quantity!', setTimeout(function(){bamazon.inquire();},100));
+            }
           });
         });
       } else {
@@ -55,6 +68,7 @@ const bamazon = {
       }
     });
   },
+  // If the user selects to buy an item and chooses an appropriate quantity then this function handles that purchase
   buyItem: function(item, ansQuantity, dbQuantity, price, name) {
     let newQuantity = dbQuantity - ansQuantity;
     let custCost = ansQuantity * price;
@@ -72,8 +86,11 @@ const bamazon = {
   }
 };
 
+//Creating a connection and then invoking the function to start the app
+//==============================================================================================================
 connection.connect(function(err) {
   if (err) throw err;
+  //Settimeout callback to delay inquirer long enough for the database to return the table data
   bamazon.retrieveAllDb(setTimeout(function(){
     bamazon.inquire();
   },100));

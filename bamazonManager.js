@@ -1,7 +1,12 @@
+//Setting up dependencies
+//==============================================================================================================
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const Table = require('cli-table');
 
+
+//Creating connection and entering DB info
+//==============================================================================================================
 const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
@@ -10,12 +15,16 @@ const connection = mysql.createConnection({
   database: "bamazonDB"
 });
 
+
+//Setting up object to hold app logic
+//==============================================================================================================
 const bamazonManager = {
+  //function to retrieve all of the data from the products table
   retrieveAllDb: function(cb) { //function that selects all from the db
     connection.query('SELECT * FROM products', function(err, res){
       if (err) throw err;
       let table = new Table({
-        head: ['department_id', 'department_name', 'over_head_costs', 'product_sales', 'total_profit'],
+        head: ['Item ID', 'Product Name', 'Department Name', 'Price', '# In Stock'],
         colWidths: [17, 17, 17, 17, 17]
       });
       for (let i of res) {
@@ -25,11 +34,12 @@ const bamazonManager = {
       bamazonManager.start();
     });
   },
+  //function to retrieve all of the data with quantities less than 5
   lowInventory: function() {
     connection.query('SELECT * FROM products WHERE stock_quantity < 5', function(err, res){
       if (err) throw err;
       let table = new Table({
-        head: ['department_id', 'department_name', 'over_head_costs', 'product_sales', 'total_profit'],
+        head: ['Item ID', 'Product Name', 'Department Name', 'Price', '# In Stock'],
         colWidths: [17, 17, 17, 17, 17]
       });
       for (let i of res) {
@@ -39,6 +49,7 @@ const bamazonManager = {
       bamazonManager.start();
     });
   },
+  //function allowing the manager to add stock to a product
   addInventory: function() {
     connection.query('SELECT * FROM products', function(err, res) {
       inquirer.prompt([
@@ -80,6 +91,7 @@ const bamazonManager = {
       });
     });
   },
+  //function to allow the manager to add a new product
   addNew: function() {
     inquirer.prompt([
       {
@@ -115,6 +127,7 @@ const bamazonManager = {
       });
     });
   },
+  //function to start the app and switch cases to invoke the correct functions
   start: function() {
     inquirer.prompt([
       {
@@ -139,4 +152,10 @@ const bamazonManager = {
     });
   }
 };
-bamazonManager.start();
+
+//Creating a connection and then invoking the function to start the app
+//==============================================================================================================
+connection.connect(function(err) {
+  if (err) throw err;
+  bamazonManager.start();
+});
